@@ -21,6 +21,7 @@ import { IncreasePaidStorageWalletOperation } from './increase-paid-storage-oper
 import { WalletOperation } from './operation';
 import { OriginationWalletOperation } from './origination-operation';
 import { TransactionWalletOperation } from './transaction-operation';
+import { TransferTicketWalletOperation } from './transfer-ticket-operation';
 import { ConfirmationTimeoutError } from '../errors';
 
 export function timeoutAfter<T>(timeoutMillisec: number): (source: Observable<T>) => Observable<T> {
@@ -159,6 +160,17 @@ export class OperationFactory {
     config: OperationFactoryConfig = {}
   ): Promise<IncreasePaidStorageWalletOperation> {
     return new IncreasePaidStorageWalletOperation(
+      hash,
+      this.context.clone(),
+      await this.createHeadObservableFromConfig(config)
+    );
+  }
+
+  async createTransferTicketOperation(
+    hash: string,
+    config: OperationFactoryConfig = {}
+  ): Promise<TransferTicketWalletOperation> {
+    return new TransferTicketWalletOperation(
       hash,
       this.context.clone(),
       await this.createHeadObservableFromConfig(config)
