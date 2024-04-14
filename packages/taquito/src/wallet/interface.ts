@@ -4,6 +4,7 @@ import {
   IncreasePaidStorageParams,
   OriginateParams,
   TransferParams,
+  TransferTicketParams,
 } from '../operations/types';
 
 export type WalletDefinedFields = 'source';
@@ -20,6 +21,8 @@ export type WalletDelegateParams = Omit<DelegateParams, WalletDefinedFields>;
 export type WalletFailingNoopParams = Omit<FailingNoopParams, WalletDefinedFields>;
 
 export type WalletIncreasePaidStorageParams = Omit<IncreasePaidStorageParams, WalletDefinedFields>;
+
+export type WalletTransferTicketParams = Omit<TransferTicketParams, WalletDefinedFields>;
 
 export interface WalletProvider {
   /**
@@ -52,6 +55,13 @@ export interface WalletProvider {
    */
   mapIncreasePaidStorageWalletParams: (
     params: () => Promise<WalletIncreasePaidStorageParams>
+  ) => Promise<any>;
+
+  /**
+   * @description Transform WalletIncreasePaidStorageParams into a format compliant with the underlying wallet
+   */
+  mapTransferTicketParamsToWalletParams: (
+    params: () => Promise<WalletTransferTicketParams>
   ) => Promise<any>;
 
   /**

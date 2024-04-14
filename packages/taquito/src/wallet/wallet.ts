@@ -16,6 +16,7 @@ import {
   WalletOriginateParams,
   WalletProvider,
   WalletTransferParams,
+  WalletTransferTicketParams,
 } from './interface';
 import {
   InvalidAddressError,
@@ -38,7 +39,8 @@ export type WalletParamsWithKind =
   | withKind<WalletTransferParams, OpKind.TRANSACTION>
   | withKind<WalletOriginateParams, OpKind.ORIGINATION>
   | withKind<WalletDelegateParams, OpKind.DELEGATION>
-  | withKind<WalletIncreasePaidStorageParams, OpKind.INCREASE_PAID_STORAGE>;
+  | withKind<WalletIncreasePaidStorageParams, OpKind.INCREASE_PAID_STORAGE>
+  | withKind<WalletTransferTicketParams, OpKind.TRANSFER_TICKET>;
 
 export class WalletOperationBatch {
   private operations: WalletParamsWithKind[] = [];
@@ -120,6 +122,21 @@ export class WalletOperationBatch {
     return this;
   }
 
+  /**
+   *
+   * @description
+   *
+   * @param param WalletTransferTicketParams operation parameter
+   */
+  withTransferTicket(params: WalletTransferTicketParams) {
+    const destinationValidation = validateAddress(params.destination);
+    if (destinationValidation !== ValidationResult.VALID) {
+      throw new InvalidAddressError(params.destination, invalidDetail(destinationValidation));
+    }
+    this.operations.push({ kind: OpKind.TRANSFER_TICKET, ...params });
+    return this;
+  }
+
   private async mapOperation(param: WalletParamsWithKind) {
     switch (param.kind) {
       case OpKind.TRANSACTION:
@@ -134,6 +151,8 @@ export class WalletOperationBatch {
         return this.walletProvider.mapDelegateParamsToWalletParams(async () => param);
       case OpKind.INCREASE_PAID_STORAGE:
         return this.walletProvider.mapIncreasePaidStorageWalletParams(async () => param);
+      case OpKind.TRANSFER_TICKET:
+        return this.walletProvider.mapTransferTicketParamsToWalletParams(async () => param);
       default:
         throw new InvalidOperationKindError(JSON.stringify((param as any).kind));
     }
@@ -160,6 +179,9 @@ export class WalletOperationBatch {
           break;
         case OpKind.INCREASE_PAID_STORAGE:
           this.withIncreasePaidStorage(param);
+          break;
+        case OpKind.TRANSFER_TICKET:
+          this.withTransferTicket(param);
           break;
         default:
           throw new InvalidOperationKindError(JSON.stringify((param as any).kind));
@@ -369,6 +391,36 @@ export class Wallet {
       const opHash = await this.walletProvider.sendOperations([mappedParams]);
       return this.context.operationFactory.createIncreasePaidStorageOperation(opHash);
     });
+  }
+
+  /**
+   *
+   * @description
+   *
+   * @returns
+   *
+   * @param params
+   */
+  transferTicket(params: WalletTransferTicketParams) {
+    const destinationValidation = validateAddress(params.destination);
+    if (destinationValidation !== ValidationResult.VALID) {
+      throw new InvalidAddressError(params.destination, invalidDetail(destinationValidation));
+    }
+    // const sourceValidation = validateAddress(params.source ?? '');
+    // if (params.source && sourceValidation !== ValidationResult.VALID) {
+    //   throw new InvalidAddressError(params.source, invalidDetail(sourceValidation));
+    // }
+    console.log('transferTicket', params)
+
+    return this.walletCommand(async () => {
+      console.log('Let\'s map the params to wallet params')
+
+      const mappedParams = await this.walletProvider.mapTransferTicketParamsToWalletParams(
+        async () => params
+      );
+      const opHash = await this.walletProvider.sendOperations([mappedParams]);
+      return this.context.operationFactory.createTransferTicketOperation(opHash);
+    })
   }
 
   /**
